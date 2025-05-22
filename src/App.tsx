@@ -8,7 +8,6 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import Dashboard from "./pages/Dashboard";
 import Leads from "./pages/Leads";
 import Import from "./pages/Import";
-import Analytics from "./pages/Analytics";
 import Login from "./pages/Login";
 import NotFound from "./pages/NotFound";
 
@@ -40,10 +39,6 @@ const App = () => {
             <Route
               path="/import"
               element={isAuthenticated ? <Import /> : <Navigate to="/login" />}
-            />
-            <Route
-              path="/analytics"
-              element={isAuthenticated ? <Analytics /> : <Navigate to="/login" />}
             />
             <Route path="*" element={<NotFound />} />
           </Routes>

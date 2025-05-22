@@ -2,15 +2,11 @@
 import { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { 
-  BarChart2, 
-  Database, 
   Home, 
   Import, 
-  LogOut, 
-  Mail, 
-  Menu, 
-  Settings, 
-  Users 
+  LogOut,
+  Users,
+  Menu 
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
@@ -27,10 +23,6 @@ const Layout = ({ children }: LayoutProps) => {
     { name: 'Dashboard', path: '/', icon: <Home className="h-5 w-5" /> },
     { name: 'Leads', path: '/leads', icon: <Users className="h-5 w-5" /> },
     { name: 'Import Data', path: '/import', icon: <Import className="h-5 w-5" /> },
-    { name: 'Email Integration', path: '/email', icon: <Mail className="h-5 w-5" /> },
-    { name: 'Analytics', path: '/analytics', icon: <BarChart2 className="h-5 w-5" /> },
-    { name: 'Databases', path: '/databases', icon: <Database className="h-5 w-5" /> },
-    { name: 'Settings', path: '/settings', icon: <Settings className="h-5 w-5" /> },
   ];
 
   const toggleSidebar = () => {
