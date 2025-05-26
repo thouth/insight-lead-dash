@@ -1,26 +1,30 @@
 
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
-
-// Sample data for the source chart
-const sourceData = [
-  { name: 'Nettside', value: 35, color: '#4263eb' },
-  { name: 'LinkedIn', value: 25, color: '#20c997' },
-  { name: 'Referanse', value: 20, color: '#f59f00' },
-  { name: 'Telefon', value: 12, color: '#da77f2' },
-  { name: 'Annet', value: 8, color: '#fa5252' },
-];
-
-// Sample data for the status chart
-const statusData = [
-  { name: 'Ny', value: 65, color: '#4263eb' },
-  { name: 'Kontaktet', value: 45, color: '#f59f00' },
-  { name: 'Kvalifisert', value: 30, color: '#9775fa' },
-  { name: 'Tilbud', value: 18, color: '#da77f2' },
-  { name: 'Avsluttet', value: 12, color: '#20c997' },
-];
+import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line } from 'recharts';
+import { useLeadChartData } from '@/hooks/useLeadCharts';
 
 export function LeadCharts() {
+  const { data: chartData, isLoading } = useLeadChartData();
+
+  if (isLoading) {
+    return (
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6">
+        {[...Array(4)].map((_, i) => (
+          <Card key={i}>
+            <CardHeader>
+              <div className="h-6 bg-muted animate-pulse rounded"></div>
+            </CardHeader>
+            <CardContent>
+              <div className="h-80 bg-muted animate-pulse rounded"></div>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+    );
+  }
+
+  const { sourceData, statusData, kwpData, ppaData } = chartData || {};
+
   return (
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6">
       <Card>
@@ -41,7 +45,7 @@ export function LeadCharts() {
                   dataKey="value"
                   label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
                 >
-                  {sourceData.map((entry, index) => (
+                  {sourceData?.map((entry, index) => (
                     <Cell key={`cell-${index}`} fill={entry.color} />
                   ))}
                 </Pie>
@@ -50,13 +54,13 @@ export function LeadCharts() {
             </ResponsiveContainer>
           </div>
           <div className="grid grid-cols-3 gap-2 mt-4">
-            {sourceData.map((item, index) => (
+            {sourceData?.map((item, index) => (
               <div key={index} className="flex items-center text-xs">
                 <div 
                   className="w-3 h-3 rounded-full mr-2"
                   style={{ backgroundColor: item.color }}
                 ></div>
-                <span>{item.name} ({item.value}%)</span>
+                <span>{item.name} ({item.value})</span>
               </div>
             ))}
           </div>
@@ -84,11 +88,69 @@ export function LeadCharts() {
                 <YAxis />
                 <Tooltip />
                 <Bar dataKey="value">
-                  {statusData.map((entry, index) => (
+                  {statusData?.map((entry, index) => (
                     <Cell key={`cell-${index}`} fill={entry.color} />
                   ))}
                 </Bar>
               </BarChart>
+            </ResponsiveContainer>
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>kWp per status</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="h-80 w-full">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart
+                data={kwpData}
+                margin={{
+                  top: 20,
+                  right: 30,
+                  left: 20,
+                  bottom: 5,
+                }}
+              >
+                <CartesianGrid strokeDasharray="3 3" stroke="#2d3748" />
+                <XAxis dataKey="name" />
+                <YAxis />
+                <Tooltip />
+                <Bar dataKey="avgKwp" fill="#4263eb">
+                  {kwpData?.map((entry, index) => (
+                    <Cell key={`cell-${index}`} fill={entry.color} />
+                  ))}
+                </Bar>
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>PPA prices</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="h-80 w-full">
+            <ResponsiveContainer width="100%" height="100%">
+              <LineChart
+                data={ppaData}
+                margin={{
+                  top: 20,
+                  right: 30,
+                  left: 20,
+                  bottom: 5,
+                }}
+              >
+                <CartesianGrid strokeDasharray="3 3" stroke="#2d3748" />
+                <XAxis dataKey="date" />
+                <YAxis />
+                <Tooltip />
+                <Line type="monotone" dataKey="price" stroke="#4263eb" strokeWidth={2} />
+              </LineChart>
             </ResponsiveContainer>
           </div>
         </CardContent>
