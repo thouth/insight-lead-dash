@@ -5,45 +5,23 @@ import { Input } from '@/components/ui/input';
 import { DataTable } from '@/components/ui/data-table';
 import { StatusBadge } from '@/components/ui/status-badge';
 import { Filter, Plus, Search } from 'lucide-react';
-
-// Sample data for the leads table
-const leadsData = [
-  {
-    id: 1,
-    date: "15.03.2024",
-    company: "Norsk Bedrift AS",
-    contact: "Ole Hansen",
-    orgNumber: "123456789",
-    status: "Ny",
-    source: "Nettside",
-    seller: "Ole Hansen",
-    customer: "Nei",
-    kWp: "100",
-    ppa: "1.25"
-  },
-  {
-    id: 2,
-    date: "14.03.2024",
-    company: "Sol & Energi AS",
-    contact: "Kari Olsen",
-    orgNumber: "987654321",
-    status: "Kontaktet",
-    source: "LinkedIn",
-    seller: "Kari Olsen",
-    customer: "Ja",
-    kWp: "75",
-    ppa: "1.15"
-  }
-];
+import { useLeads } from '@/hooks/useLeads';
 
 export function LeadTable() {
   const [searchQuery, setSearchQuery] = useState("");
+  const { data: leads, isLoading } = useLeads();
+  
+  const filteredLeads = leads?.filter(lead => 
+    lead.company.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    lead.org_number.includes(searchQuery) ||
+    (lead.contact && lead.contact.toLowerCase().includes(searchQuery.toLowerCase()))
+  ) || [];
   
   const columns = [
     {
       id: "date",
       header: "Dato",
-      cell: (row: any) => <span>{row.date}</span>,
+      cell: (row: any) => <span>{new Date(row.date).toLocaleDateString('nb-NO')}</span>,
     },
     {
       id: "company",
@@ -53,7 +31,7 @@ export function LeadTable() {
     {
       id: "orgNumber",
       header: "Org.nr",
-      cell: (row: any) => <span>{row.orgNumber}</span>,
+      cell: (row: any) => <span>{row.org_number}</span>,
     },
     {
       id: "status",
@@ -73,17 +51,17 @@ export function LeadTable() {
     {
       id: "customer",
       header: "Eksisterende kunde",
-      cell: (row: any) => <span>{row.customer}</span>,
+      cell: (row: any) => <span>{row.is_existing_customer ? 'Ja' : 'Nei'}</span>,
     },
     {
       id: "kWp",
       header: "kWp",
-      cell: (row: any) => <span>{row.kWp}</span>,
+      cell: (row: any) => <span>{row.kwp || '-'}</span>,
     },
     {
       id: "ppa",
       header: "PPA pris",
-      cell: (row: any) => <span>{row.ppa}</span>,
+      cell: (row: any) => <span>{row.ppa_price || '-'}</span>,
     },
     {
       id: "actions",
@@ -109,13 +87,22 @@ export function LeadTable() {
     },
   ];
 
+  if (isLoading) {
+    return (
+      <div className="space-y-4">
+        <div className="h-10 bg-muted animate-pulse rounded"></div>
+        <div className="h-96 bg-muted animate-pulse rounded"></div>
+      </div>
+    );
+  }
+
   return (
     <div>
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
         <div className="relative flex-1 max-w-md">
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input 
-            placeholder="Search leads..."
+            placeholder="Søk leads..."
             className="pl-10"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
@@ -134,7 +121,20 @@ export function LeadTable() {
         </div>
       </div>
       
-      <DataTable data={leadsData} columns={columns} />
+      {filteredLeads.length === 0 ? (
+        <div className="text-center py-12">
+          <p className="text-muted-foreground">
+            {searchQuery ? 'Ingen leads matcher søket' : 'Ingen leads funnet'}
+          </p>
+          {!searchQuery && (
+            <p className="text-sm text-muted-foreground mt-2">
+              Importer en Excel-fil for å komme i gang
+            </p>
+          )}
+        </div>
+      ) : (
+        <DataTable data={filteredLeads} columns={columns} />
+      )}
     </div>
   );
 }

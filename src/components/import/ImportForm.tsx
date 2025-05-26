@@ -1,11 +1,14 @@
-
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { File, Upload } from 'lucide-react';
+import { File, Upload, AlertCircle, CheckCircle } from 'lucide-react';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { processExcelFile } from '@/utils/excelProcessor';
+import { useUpsertLeads } from '@/hooks/useLeads';
+import { toast } from '@/hooks/use-toast';
 
 const importHistory = [
   {
@@ -54,6 +57,10 @@ export function ImportForm() {
   const [fileType, setFileType] = useState("excel");
   const [file, setFile] = useState<File | null>(null);
   const [dragActive, setDragActive] = useState(false);
+  const [processing, setProcessing] = useState(false);
+  const [processingResult, setProcessingResult] = useState<any>(null);
+  
+  const upsertLeads = useUpsertLeads();
 
   const handleDrag = (e: React.DragEvent) => {
     e.preventDefault();
@@ -77,6 +84,38 @@ export function ImportForm() {
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
       setFile(e.target.files[0]);
+    }
+  };
+
+  const handleImport = async () => {
+    if (!file) return;
+    
+    setProcessing(true);
+    setProcessingResult(null);
+    
+    try {
+      toast({
+        title: "Processing file",
+        description: "Reading and validating Excel data...",
+      });
+      
+      const result = await processExcelFile(file);
+      setProcessingResult(result);
+      
+      if (result.validLeads.length > 0) {
+        await upsertLeads.mutateAsync(result.validLeads);
+        setFile(null);
+        setProcessingResult(null);
+      }
+    } catch (error) {
+      console.error('Import error:', error);
+      toast({
+        title: "Import failed",
+        description: "An error occurred while importing the file",
+        variant: "destructive",
+      });
+    } finally {
+      setProcessing(false);
     }
   };
 
@@ -105,7 +144,6 @@ export function ImportForm() {
                   <SelectContent>
                     <SelectItem value="excel">Excel (.xlsx, .xls)</SelectItem>
                     <SelectItem value="csv">CSV (.csv)</SelectItem>
-                    <SelectItem value="json">JSON (.json)</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -144,6 +182,7 @@ export function ImportForm() {
                         type="file" 
                         className="hidden" 
                         id="file-upload"
+                        accept=".xlsx,.xls,.csv"
                         onChange={handleFileChange} 
                       />
                       <label htmlFor="file-upload">
@@ -160,20 +199,52 @@ export function ImportForm() {
                   )}
                 </div>
               </div>
+
+              {processingResult && (
+                <div className="space-y-2">
+                  {processingResult.validLeads.length > 0 && (
+                    <Alert>
+                      <CheckCircle className="h-4 w-4" />
+                      <AlertDescription>
+                        Found {processingResult.validLeads.length} valid leads out of {processingResult.totalRows} rows
+                      </AlertDescription>
+                    </Alert>
+                  )}
+                  
+                  {processingResult.errors.length > 0 && (
+                    <Alert variant="destructive">
+                      <AlertCircle className="h-4 w-4" />
+                      <AlertDescription>
+                        <div className="space-y-1">
+                          <p>{processingResult.errors.length} errors found:</p>
+                          <ul className="list-disc list-inside text-xs space-y-1">
+                            {processingResult.errors.slice(0, 5).map((error: string, index: number) => (
+                              <li key={index}>{error}</li>
+                            ))}
+                            {processingResult.errors.length > 5 && (
+                              <li>... and {processingResult.errors.length - 5} more errors</li>
+                            )}
+                          </ul>
+                        </div>
+                      </AlertDescription>
+                    </Alert>
+                  )}
+                </div>
+              )}
               
-              <div>
-                <label className="text-sm font-medium mb-2 block">Column Mapping (Optional)</label>
-                <Input 
-                  placeholder="name:Name, email:Email Address, company:Company Name"
-                />
-                <p className="text-xs text-muted-foreground mt-1">
-                  Map columns from your file to our system fields (format: yourColumn:ourField)
-                </p>
+              <div className="text-xs text-muted-foreground space-y-1">
+                <p><strong>Expected columns:</strong> Dato, Firmanavn, Org.nr, Status, Kanal, Ansvarlig selger, Kontaktperson, Eksisterende kunde, kWp, PPA pris</p>
+                <p><strong>Required:</strong> Firmanavn, Org.nr, Status</p>
+                <p><strong>Duplicate handling:</strong> Leads with same Org.nr will be updated, empty fields will be filled</p>
               </div>
               
-              <Button className="w-full mt-4" disabled={!file}>
+              <Button 
+                className="w-full mt-4" 
+                disabled={!file || processing}
+                onClick={handleImport}
+              >
                 <Upload className="mr-2 h-4 w-4" />
-                Import File
+                {processing ? 'Processing...' : 'Import File'}
               </Button>
             </TabsContent>
             

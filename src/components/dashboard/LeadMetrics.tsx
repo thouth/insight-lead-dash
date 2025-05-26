@@ -1,35 +1,48 @@
 
 import { Users, BarChart2, PieChart } from 'lucide-react';
 import { MetricCard } from '@/components/ui/metric-card';
+import { useLeadMetrics } from '@/hooks/useLeads';
 
 export function LeadMetrics() {
+  const { data: metrics, isLoading } = useLeadMetrics();
+
+  if (isLoading) {
+    return (
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        {[...Array(4)].map((_, i) => (
+          <div key={i} className="h-32 bg-muted animate-pulse rounded-lg"></div>
+        ))}
+      </div>
+    );
+  }
+
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
       <MetricCard
         title="Total antal leads"
-        value="3,568"
-        change="+12.5% fra forrige måned"
+        value={metrics?.totalLeads.toLocaleString() || "0"}
+        change="Basert på databasedata"
         changeType="positive"
         icon={<Users className="h-5 w-5" />}
       />
       <MetricCard
         title="Gjennomsnittlig kWp"
-        value="85.2"
-        change="+3.1% fra forrige måned"
+        value={metrics?.avgKwp || "0"}
+        change="Basert på databasedata"
         changeType="positive"
         icon={<BarChart2 className="h-5 w-5" />}
       />
       <MetricCard
         title="Gjennomsnittlig PPA pris"
-        value="1.24"
-        change="-2.3% fra forrige måned"
-        changeType="negative"
+        value={metrics?.avgPpaPrice || "0"}
+        change="Basert på databasedata"
+        changeType="positive"
         icon={<BarChart2 className="h-5 w-5" />}
       />
       <MetricCard
         title="Kvalifiserte leads"
-        value="852"
-        change="+14.2% fra forrige måned"
+        value={metrics?.qualifiedLeads.toLocaleString() || "0"}
+        change="Basert på databasedata"
         changeType="positive"
         icon={<PieChart className="h-5 w-5" />}
       />
