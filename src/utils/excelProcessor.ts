@@ -1,4 +1,3 @@
-
 import * as XLSX from 'xlsx';
 import { Lead } from '@/hooks/useLeads';
 
@@ -15,9 +14,9 @@ const isRowEmpty = (row: any): boolean => {
 };
 
 const hasRequiredFields = (row: any): boolean => {
-  return row['Firmanavn'] && String(row['Firmanavn']).trim() &&
-         row['Org.nr'] && String(row['Org.nr']).trim() &&
-         row['Status'] && String(row['Status']).trim();
+  return Boolean(row['Firmanavn'] && String(row['Firmanavn']).trim()) &&
+         Boolean(row['Org.nr'] && String(row['Org.nr']).trim()) &&
+         Boolean(row['Status'] && String(row['Status']).trim());
 };
 
 const mapExcelRowToLead = (row: any, rowIndex: number): { lead?: Lead; error?: string } => {
