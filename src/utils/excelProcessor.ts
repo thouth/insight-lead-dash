@@ -47,21 +47,30 @@ const findColumnValue = (row: any, possibleNames: string[]): any => {
 };
 
 const isRowEmpty = (row: any): boolean => {
-  const company = findColumnValue(row, COLUMN_MAPPINGS.company);
-  const orgNumber = findColumnValue(row, COLUMN_MAPPINGS.org_number);
-  const status = findColumnValue(row, COLUMN_MAPPINGS.status);
-  
-  return !company && !orgNumber && !status;
+  // Check if all values in the row are empty
+  return Object.values(row).every(value => 
+    value === undefined || 
+    value === null || 
+    String(value).trim() === '' ||
+    String(value).trim() === 'undefined'
+  );
 };
 
 const hasRequiredFields = (row: any): boolean => {
   const company = findColumnValue(row, COLUMN_MAPPINGS.company);
   const orgNumber = findColumnValue(row, COLUMN_MAPPINGS.org_number);
   const status = findColumnValue(row, COLUMN_MAPPINGS.status);
+  const date = findColumnValue(row, COLUMN_MAPPINGS.date);
   
-  return Boolean(company && String(company).trim()) &&
-         Boolean(orgNumber && String(orgNumber).trim()) &&
-         Boolean(status && String(status).trim());
+  // Required: (Firmanavn OR Org.nr) AND Status AND Date
+  const hasCompanyOrOrgNumber = Boolean(
+    (company && String(company).trim()) || 
+    (orgNumber && String(orgNumber).trim())
+  );
+  const hasStatus = Boolean(status && String(status).trim());
+  const hasDate = Boolean(date && String(date).trim());
+  
+  return hasCompanyOrOrgNumber && hasStatus && hasDate;
 };
 
 const mapExcelRowToLead = (row: any, rowIndex: number): { lead?: Lead; error?: string } => {
@@ -70,6 +79,7 @@ const mapExcelRowToLead = (row: any, rowIndex: number): { lead?: Lead; error?: s
     
     // Skip completely empty rows
     if (isRowEmpty(row)) {
+      console.log(`Row ${rowIndex + 2} is empty, skipping`);
       return {};
     }
 
@@ -78,31 +88,38 @@ const mapExcelRowToLead = (row: any, rowIndex: number): { lead?: Lead; error?: s
       const company = findColumnValue(row, COLUMN_MAPPINGS.company);
       const orgNumber = findColumnValue(row, COLUMN_MAPPINGS.org_number);
       const status = findColumnValue(row, COLUMN_MAPPINGS.status);
+      const date = findColumnValue(row, COLUMN_MAPPINGS.date);
       
       const missing = [];
-      if (!company || !String(company).trim()) missing.push('Firmanavn');
-      if (!orgNumber || !String(orgNumber).trim()) missing.push('Org.nr');
-      if (!status || !String(status).trim()) missing.push('Status');
+      if (!company && !orgNumber) missing.push('Firmanavn or Org.nr');
+      if (!status) missing.push('Status');
+      if (!date) missing.push('Dato');
       
-      console.log(`Row ${rowIndex + 2} missing fields:`, missing, 'Available keys:', Object.keys(row));
+      console.log(`Row ${rowIndex + 2} missing required fields:`, missing, 'Available keys:', Object.keys(row));
       return { error: `Row ${rowIndex + 2}: Missing required fields: ${missing.join(', ')}` };
     }
 
     // Extract values using flexible column mapping
     const dateValue = findColumnValue(row, COLUMN_MAPPINGS.date);
+    const company = findColumnValue(row, COLUMN_MAPPINGS.company);
+    const orgNumber = findColumnValue(row, COLUMN_MAPPINGS.org_number);
+    const status = findColumnValue(row, COLUMN_MAPPINGS.status);
     const existingCustomerValue = findColumnValue(row, COLUMN_MAPPINGS.existing_customer);
     const kwpValue = findColumnValue(row, COLUMN_MAPPINGS.kwp);
     const ppaPriceValue = findColumnValue(row, COLUMN_MAPPINGS.ppa_price);
+    const source = findColumnValue(row, COLUMN_MAPPINGS.source);
+    const seller = findColumnValue(row, COLUMN_MAPPINGS.seller);
+    const contact = findColumnValue(row, COLUMN_MAPPINGS.contact);
 
     // Map Excel columns to database fields
     const lead: Lead = {
       date: dateValue ? new Date(dateValue).toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
-      company: String(findColumnValue(row, COLUMN_MAPPINGS.company)).trim(),
-      org_number: String(findColumnValue(row, COLUMN_MAPPINGS.org_number)).trim(),
-      status: String(findColumnValue(row, COLUMN_MAPPINGS.status)).trim(),
-      source: findColumnValue(row, COLUMN_MAPPINGS.source) ? String(findColumnValue(row, COLUMN_MAPPINGS.source)).trim() : 'Nettside',
-      seller: findColumnValue(row, COLUMN_MAPPINGS.seller) ? String(findColumnValue(row, COLUMN_MAPPINGS.seller)).trim() : 'Unknown',
-      contact: findColumnValue(row, COLUMN_MAPPINGS.contact) ? String(findColumnValue(row, COLUMN_MAPPINGS.contact)).trim() : undefined,
+      company: company ? String(company).trim() : (orgNumber ? String(orgNumber).trim() : 'Unknown'),
+      org_number: orgNumber ? String(orgNumber).trim() : (company ? String(company).trim() : 'Unknown'),
+      status: String(status).trim(),
+      source: source ? String(source).trim() : 'Nettside',
+      seller: seller ? String(seller).trim() : 'Unknown',
+      contact: contact ? String(contact).trim() : undefined,
       is_existing_customer: existingCustomerValue ? String(existingCustomerValue).toLowerCase().trim() === 'ja' : false,
       kwp: kwpValue ? parseFloat(String(kwpValue)) : undefined,
       ppa_price: ppaPriceValue ? parseFloat(String(ppaPriceValue)) : undefined,
@@ -131,11 +148,15 @@ export const processExcelFile = async (file: File): Promise<ExcelProcessingResul
         
         console.log('Processing worksheet:', sheetName);
         
-        // Convert to JSON
-        const jsonData = XLSX.utils.sheet_to_json(worksheet);
+        // Convert to JSON with better handling of empty cells
+        const jsonData = XLSX.utils.sheet_to_json(worksheet, { 
+          defval: '', // Default value for empty cells
+          raw: false // Convert everything to strings first
+        });
         
         console.log('Excel data loaded:', jsonData.length, 'rows');
-        console.log('First row sample:', jsonData[0]);
+        console.log('First few rows sample:', jsonData.slice(0, 3));
+        console.log('Available columns in first row:', Object.keys(jsonData[0] || {}));
         
         const validLeads: Lead[] = [];
         const errors: string[] = [];
