@@ -1,12 +1,13 @@
 
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { AlertCircle, CheckCircle } from 'lucide-react';
+import { AlertCircle, CheckCircle, Info } from 'lucide-react';
 
 interface ProcessingResultProps {
   processingResult: {
     validLeads: any[];
     errors: string[];
     totalRows: number;
+    skippedRows: number;
   } | null;
 }
 
@@ -19,7 +20,16 @@ export function ProcessingResult({ processingResult }: ProcessingResultProps) {
         <Alert>
           <CheckCircle className="h-4 w-4" />
           <AlertDescription>
-            Found {processingResult.validLeads.length} valid leads out of {processingResult.totalRows} rows
+            Successfully processed {processingResult.validLeads.length} valid leads out of {processingResult.totalRows} total rows
+          </AlertDescription>
+        </Alert>
+      )}
+      
+      {processingResult.skippedRows > 0 && (
+        <Alert>
+          <Info className="h-4 w-4" />
+          <AlertDescription>
+            Skipped {processingResult.skippedRows} empty rows
           </AlertDescription>
         </Alert>
       )}
@@ -29,7 +39,7 @@ export function ProcessingResult({ processingResult }: ProcessingResultProps) {
           <AlertCircle className="h-4 w-4" />
           <AlertDescription>
             <div className="space-y-1">
-              <p>{processingResult.errors.length} errors found:</p>
+              <p>{processingResult.errors.length} rows with errors:</p>
               <ul className="list-disc list-inside text-xs space-y-1">
                 {processingResult.errors.slice(0, 5).map((error: string, index: number) => (
                   <li key={index}>{error}</li>

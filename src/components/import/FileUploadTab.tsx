@@ -5,15 +5,16 @@ import { FileUploadSection } from './FileUploadSection';
 import { ProcessingResult } from './ProcessingResult';
 import { processExcelFile } from '@/utils/excelProcessor';
 import { useUpsertLeads } from '@/hooks/useLeads';
+import { useCreateImportRecord } from '@/hooks/useImportHistory';
 import { toast } from '@/hooks/use-toast';
 
 export function FileUploadTab() {
-  const [fileType, setFileType] = useState("excel");
   const [file, setFile] = useState<File | null>(null);
   const [processing, setProcessing] = useState(false);
   const [processingResult, setProcessingResult] = useState<any>(null);
   
   const upsertLeads = useUpsertLeads();
+  const createImportRecord = useCreateImportRecord();
 
   const handleImport = async () => {
     if (!file) return;
@@ -32,8 +33,30 @@ export function FileUploadTab() {
       
       if (result.validLeads.length > 0) {
         await upsertLeads.mutateAsync(result.validLeads);
+        
+        // Create import history record
+        await createImportRecord.mutateAsync({
+          fileName: file.name,
+          totalRows: result.totalRows,
+          validRows: result.validLeads.length,
+          errorRows: result.errors.length,
+          skippedRows: result.skippedRows,
+          status: 'completed',
+        });
+        
         setFile(null);
         setProcessingResult(null);
+      } else if (result.errors.length > 0) {
+        // Create failed import record
+        await createImportRecord.mutateAsync({
+          fileName: file.name,
+          totalRows: result.totalRows,
+          validRows: 0,
+          errorRows: result.errors.length,
+          skippedRows: result.skippedRows,
+          status: 'failed',
+          errorMessage: result.errors.join(', '),
+        });
       }
     } catch (error) {
       console.error('Import error:', error);
@@ -42,6 +65,18 @@ export function FileUploadTab() {
         description: "An error occurred while importing the file",
         variant: "destructive",
       });
+      
+      if (file) {
+        await createImportRecord.mutateAsync({
+          fileName: file.name,
+          totalRows: 0,
+          validRows: 0,
+          errorRows: 1,
+          skippedRows: 0,
+          status: 'failed',
+          errorMessage: String(error),
+        });
+      }
     } finally {
       setProcessing(false);
     }
@@ -50,8 +85,6 @@ export function FileUploadTab() {
   return (
     <TabsContent value="file" className="space-y-4">
       <FileUploadSection
-        fileType={fileType}
-        setFileType={setFileType}
         file={file}
         setFile={setFile}
         onImport={handleImport}

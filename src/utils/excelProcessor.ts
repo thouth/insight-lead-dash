@@ -6,12 +6,29 @@ export interface ExcelProcessingResult {
   validLeads: Lead[];
   errors: string[];
   totalRows: number;
+  skippedRows: number;
 }
+
+const isRowEmpty = (row: any): boolean => {
+  const requiredFields = ['Firmanavn', 'Org.nr', 'Status'];
+  return !requiredFields.some(field => row[field] && String(row[field]).trim());
+};
+
+const hasRequiredFields = (row: any): boolean => {
+  return row['Firmanavn'] && String(row['Firmanavn']).trim() &&
+         row['Org.nr'] && String(row['Org.nr']).trim() &&
+         row['Status'] && String(row['Status']).trim();
+};
 
 const mapExcelRowToLead = (row: any, rowIndex: number): { lead?: Lead; error?: string } => {
   try {
+    // Skip completely empty rows
+    if (isRowEmpty(row)) {
+      return {};
+    }
+
     // Check if row has required fields
-    if (!row['Firmanavn'] || !row['Org.nr'] || !row['Status']) {
+    if (!hasRequiredFields(row)) {
       return { error: `Row ${rowIndex + 1}: Missing required fields (Firmanavn, Org.nr, or Status)` };
     }
 
@@ -53,6 +70,7 @@ export const processExcelFile = async (file: File): Promise<ExcelProcessingResul
         
         const validLeads: Lead[] = [];
         const errors: string[] = [];
+        let skippedRows = 0;
         
         jsonData.forEach((row, index) => {
           const result = mapExcelRowToLead(row, index);
@@ -61,6 +79,9 @@ export const processExcelFile = async (file: File): Promise<ExcelProcessingResul
             validLeads.push(result.lead);
           } else if (result.error) {
             errors.push(result.error);
+          } else {
+            // Empty row was skipped
+            skippedRows++;
           }
         });
         
@@ -68,12 +89,14 @@ export const processExcelFile = async (file: File): Promise<ExcelProcessingResul
           validLeads,
           errors,
           totalRows: jsonData.length,
+          skippedRows,
         });
       } catch (error) {
         resolve({
           validLeads: [],
           errors: [`Failed to process Excel file: ${error}`],
           totalRows: 0,
+          skippedRows: 0,
         });
       }
     };
@@ -83,6 +106,7 @@ export const processExcelFile = async (file: File): Promise<ExcelProcessingResul
         validLeads: [],
         errors: ['Failed to read file'],
         totalRows: 0,
+        skippedRows: 0,
       });
     };
     

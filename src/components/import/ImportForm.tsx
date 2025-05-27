@@ -2,8 +2,6 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { TabNavigation } from './TabNavigation';
 import { FileUploadTab } from './FileUploadTab';
-import { EmailTab } from './EmailTab';
-import { ApiTab } from './ApiTab';
 import { ImportHistoryTable } from './ImportHistoryTable';
 
 export function ImportForm() {
@@ -11,14 +9,12 @@ export function ImportForm() {
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
       <Card>
         <CardHeader>
-          <CardTitle>Import Data</CardTitle>
-          <CardDescription>Choose a source to import lead data</CardDescription>
+          <CardTitle>Import Excel Data</CardTitle>
+          <CardDescription>Upload Excel files to import lead data</CardDescription>
         </CardHeader>
         <CardContent>
           <TabNavigation>
             <FileUploadTab />
-            <EmailTab />
-            <ApiTab />
           </TabNavigation>
         </CardContent>
       </Card>
