@@ -41,7 +41,7 @@ const mapExcelRowToLead = (row: any, rowIndex: number): { lead?: Lead; error?: s
       source: row['Kanal'] ? String(row['Kanal']).trim() : 'Nettside',
       seller: row['Ansvarlig selger'] ? String(row['Ansvarlig selger']).trim() : 'Unknown',
       contact: row['Kontaktperson'] ? String(row['Kontaktperson']).trim() : undefined,
-      is_existing_customer: row['Eksisterende kunde'] ? String(row['Eksisterende kunde']).toLowerCase() === 'ja' : false,
+      is_existing_customer: String(row['Eksisterende kunde'] ?? '').toLowerCase().trim() === 'ja',
       kwp: row['kWp'] ? parseFloat(String(row['kWp'])) : undefined,
       ppa_price: row['PPA pris'] ? parseFloat(String(row['PPA pris'])) : undefined,
     };
