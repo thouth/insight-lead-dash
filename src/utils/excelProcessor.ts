@@ -1,3 +1,4 @@
+
 import * as XLSX from 'xlsx';
 import { Lead } from '@/hooks/useLeads';
 
@@ -8,15 +9,45 @@ export interface ExcelProcessingResult {
   skippedRows: number;
 }
 
+// Column mapping with possible variations
+const COLUMN_MAPPINGS = {
+  date: ['Dato', 'Date', 'dato'],
+  company: ['Firmanavn', 'Company', 'firmanavn', 'Firma'],
+  org_number: ['Org.nr', 'Org nr', 'Organization Number', 'org.nr', 'org nr', 'Orgnr', 'orgnr'],
+  status: ['Status', 'status'],
+  source: ['Kanal', 'Channel', 'Source', 'kanal', 'channel', 'source'],
+  seller: ['Ansvarlig selger', 'Responsible Seller', 'Seller', 'ansvarlig selger', 'seller'],
+  contact: ['Kontaktperson', 'Contact Person', 'Contact', 'kontaktperson', 'contact'],
+  existing_customer: ['Eksisterende kunde', 'Existing Customer', 'eksisterende kunde', 'existing customer'],
+  kwp: ['kWp', 'KWP', 'kwp'],
+  ppa_price: ['PPA pris', 'PPA Price', 'ppa pris', 'ppa price']
+};
+
+const findColumnValue = (row: any, possibleNames: string[]): any => {
+  for (const name of possibleNames) {
+    if (row.hasOwnProperty(name) && row[name] !== undefined && row[name] !== null && String(row[name]).trim() !== '') {
+      return row[name];
+    }
+  }
+  return null;
+};
+
 const isRowEmpty = (row: any): boolean => {
-  const requiredFields = ['Firmanavn', 'Org.nr', 'Status'];
-  return !requiredFields.some(field => row[field] && String(row[field]).trim());
+  const company = findColumnValue(row, COLUMN_MAPPINGS.company);
+  const orgNumber = findColumnValue(row, COLUMN_MAPPINGS.org_number);
+  const status = findColumnValue(row, COLUMN_MAPPINGS.status);
+  
+  return !company && !orgNumber && !status;
 };
 
 const hasRequiredFields = (row: any): boolean => {
-  return Boolean(row['Firmanavn'] && String(row['Firmanavn']).trim()) &&
-         Boolean(row['Org.nr'] && String(row['Org.nr']).trim()) &&
-         Boolean(row['Status'] && String(row['Status']).trim());
+  const company = findColumnValue(row, COLUMN_MAPPINGS.company);
+  const orgNumber = findColumnValue(row, COLUMN_MAPPINGS.org_number);
+  const status = findColumnValue(row, COLUMN_MAPPINGS.status);
+  
+  return Boolean(company && String(company).trim()) &&
+         Boolean(orgNumber && String(orgNumber).trim()) &&
+         Boolean(status && String(status).trim());
 };
 
 const mapExcelRowToLead = (row: any, rowIndex: number): { lead?: Lead; error?: string } => {
@@ -28,26 +59,41 @@ const mapExcelRowToLead = (row: any, rowIndex: number): { lead?: Lead; error?: s
 
     // Check if row has required fields
     if (!hasRequiredFields(row)) {
-      return { error: `Row ${rowIndex + 1}: Missing required fields (Firmanavn, Org.nr, or Status)` };
+      const company = findColumnValue(row, COLUMN_MAPPINGS.company);
+      const orgNumber = findColumnValue(row, COLUMN_MAPPINGS.org_number);
+      const status = findColumnValue(row, COLUMN_MAPPINGS.status);
+      
+      const missing = [];
+      if (!company || !String(company).trim()) missing.push('Company/Firmanavn');
+      if (!orgNumber || !String(orgNumber).trim()) missing.push('Org.nr');
+      if (!status || !String(status).trim()) missing.push('Status');
+      
+      return { error: `Row ${rowIndex + 2}: Missing required fields: ${missing.join(', ')}` };
     }
+
+    // Extract values using flexible column mapping
+    const dateValue = findColumnValue(row, COLUMN_MAPPINGS.date);
+    const existingCustomerValue = findColumnValue(row, COLUMN_MAPPINGS.existing_customer);
+    const kwpValue = findColumnValue(row, COLUMN_MAPPINGS.kwp);
+    const ppaPriceValue = findColumnValue(row, COLUMN_MAPPINGS.ppa_price);
 
     // Map Excel columns to database fields
     const lead: Lead = {
-      date: row['Dato'] ? new Date(row['Dato']).toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
-      company: String(row['Firmanavn']).trim(),
-      org_number: String(row['Org.nr']).trim(),
-      status: String(row['Status']).trim(),
-      source: row['Kanal'] ? String(row['Kanal']).trim() : 'Nettside',
-      seller: row['Ansvarlig selger'] ? String(row['Ansvarlig selger']).trim() : 'Unknown',
-      contact: row['Kontaktperson'] ? String(row['Kontaktperson']).trim() : undefined,
-      is_existing_customer: String(row['Eksisterende kunde'] ?? '').toLowerCase().trim() === 'ja',
-      kwp: row['kWp'] ? parseFloat(String(row['kWp'])) : undefined,
-      ppa_price: row['PPA pris'] ? parseFloat(String(row['PPA pris'])) : undefined,
+      date: dateValue ? new Date(dateValue).toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
+      company: String(findColumnValue(row, COLUMN_MAPPINGS.company)).trim(),
+      org_number: String(findColumnValue(row, COLUMN_MAPPINGS.org_number)).trim(),
+      status: String(findColumnValue(row, COLUMN_MAPPINGS.status)).trim(),
+      source: findColumnValue(row, COLUMN_MAPPINGS.source) ? String(findColumnValue(row, COLUMN_MAPPINGS.source)).trim() : 'Nettside',
+      seller: findColumnValue(row, COLUMN_MAPPINGS.seller) ? String(findColumnValue(row, COLUMN_MAPPINGS.seller)).trim() : 'Unknown',
+      contact: findColumnValue(row, COLUMN_MAPPINGS.contact) ? String(findColumnValue(row, COLUMN_MAPPINGS.contact)).trim() : undefined,
+      is_existing_customer: existingCustomerValue ? String(existingCustomerValue).toLowerCase().trim() === 'ja' : false,
+      kwp: kwpValue ? parseFloat(String(kwpValue)) : undefined,
+      ppa_price: ppaPriceValue ? parseFloat(String(ppaPriceValue)) : undefined,
     };
 
     return { lead };
   } catch (error) {
-    return { error: `Row ${rowIndex + 1}: Error processing data - ${error}` };
+    return { error: `Row ${rowIndex + 2}: Error processing data - ${error}` };
   }
 };
 
