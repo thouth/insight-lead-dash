@@ -10,6 +10,8 @@ import {
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
+import { useAuth } from '@/contexts/AuthContext';
+import { useToast } from '@/components/ui/use-toast';
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -18,6 +20,8 @@ interface LayoutProps {
 const Layout = ({ children }: LayoutProps) => {
   const [collapsed, setCollapsed] = useState(false);
   const location = useLocation();
+  const { signOut } = useAuth();
+  const { toast } = useToast();
 
   const menuItems = [
     { name: 'Dashboard', path: '/', icon: <Home className="h-5 w-5" /> },
@@ -27,6 +31,22 @@ const Layout = ({ children }: LayoutProps) => {
 
   const toggleSidebar = () => {
     setCollapsed(!collapsed);
+  };
+
+  const handleLogout = async () => {
+    try {
+      await signOut();
+      toast({
+        title: "Success",
+        description: "You have been logged out successfully",
+      });
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to log out",
+        variant: "destructive",
+      });
+    }
   };
 
   return (
@@ -74,6 +94,7 @@ const Layout = ({ children }: LayoutProps) => {
         <div className="p-4">
           <Button 
             variant="ghost" 
+            onClick={handleLogout}
             className={cn(
               "flex items-center text-sidebar-foreground hover:bg-sidebar-accent w-full",
               collapsed && "justify-center"

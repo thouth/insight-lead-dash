@@ -7,25 +7,44 @@ import { Label } from '@/components/ui/label';
 import { useToast } from '@/components/ui/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 
-interface LoginFormProps {
-  onSuccess: (userId: string, requiresTwoFactor?: boolean) => void;
-  onSwitchToSignUp: () => void;
-  onSetup2FA: (userId: string) => void;
+interface SignUpFormProps {
+  onSuccess: (userId: string) => void;
+  onSwitchToLogin: () => void;
 }
 
-export function LoginForm({ onSuccess, onSwitchToSignUp, onSetup2FA }: LoginFormProps) {
+export function SignUpForm({ onSuccess, onSwitchToLogin }: SignUpFormProps) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [fullName, setFullName] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!email || !password) {
+    if (!email || !password || !fullName) {
       toast({
         title: "Error",
-        description: "Please enter both email and password",
+        description: "Please fill in all required fields",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (password !== confirmPassword) {
+      toast({
+        title: "Error",
+        description: "Passwords do not match",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (password.length < 6) {
+      toast({
+        title: "Error",
+        description: "Password must be at least 6 characters long",
         variant: "destructive",
       });
       return;
@@ -34,9 +53,14 @@ export function LoginForm({ onSuccess, onSwitchToSignUp, onSetup2FA }: LoginForm
     setIsLoading(true);
     
     try {
-      const { data, error } = await supabase.auth.signInWithPassword({
+      const { data, error } = await supabase.auth.signUp({
         email,
         password,
+        options: {
+          data: {
+            full_name: fullName,
+          },
+        },
       });
 
       if (error) {
@@ -49,23 +73,11 @@ export function LoginForm({ onSuccess, onSwitchToSignUp, onSetup2FA }: LoginForm
       }
 
       if (data.user) {
-        // Check if user has 2FA enabled
-        const { data: profile } = await supabase
-          .from('profiles')
-          .select('is_2fa_enabled')
-          .eq('id', data.user.id)
-          .single();
-
-        if (profile?.is_2fa_enabled) {
-          onSuccess(data.user.id, true);
-        } else {
-          onSuccess(data.user.id, false);
-        }
-
         toast({
           title: "Success",
-          description: "You have successfully logged in",
+          description: "Account created successfully! Please check your email for verification.",
         });
+        onSuccess(data.user.id);
       }
     } catch (error) {
       toast({
@@ -81,13 +93,24 @@ export function LoginForm({ onSuccess, onSwitchToSignUp, onSetup2FA }: LoginForm
   return (
     <Card className="w-full max-w-md mx-auto">
       <CardHeader className="space-y-1">
-        <CardTitle className="text-2xl font-bold">Sign In</CardTitle>
+        <CardTitle className="text-2xl font-bold">Create Account</CardTitle>
         <CardDescription>
-          Enter your credentials to access your account
+          Enter your information to create a new account
         </CardDescription>
       </CardHeader>
       <CardContent>
         <form onSubmit={handleSubmit} className="space-y-4">
+          <div className="space-y-2">
+            <Label htmlFor="fullName">Full Name</Label>
+            <Input 
+              id="fullName" 
+              type="text" 
+              placeholder="Your full name"
+              value={fullName}
+              onChange={(e) => setFullName(e.target.value)}
+              required
+            />
+          </div>
           <div className="space-y-2">
             <Label htmlFor="email">Email</Label>
             <Input 
@@ -104,13 +127,25 @@ export function LoginForm({ onSuccess, onSwitchToSignUp, onSetup2FA }: LoginForm
             <Input 
               id="password" 
               type="password"
+              placeholder="Min. 6 characters"
               value={password}
               onChange={(e) => setPassword(e.target.value)} 
               required
             />
           </div>
+          <div className="space-y-2">
+            <Label htmlFor="confirmPassword">Confirm Password</Label>
+            <Input 
+              id="confirmPassword" 
+              type="password"
+              placeholder="Confirm your password"
+              value={confirmPassword}
+              onChange={(e) => setConfirmPassword(e.target.value)} 
+              required
+            />
+          </div>
           <Button type="submit" className="w-full" disabled={isLoading}>
-            {isLoading ? "Signing in..." : "Sign in"}
+            {isLoading ? "Creating account..." : "Create account"}
           </Button>
         </form>
       </CardContent>
@@ -118,10 +153,10 @@ export function LoginForm({ onSuccess, onSwitchToSignUp, onSetup2FA }: LoginForm
         <div className="text-center">
           <Button 
             variant="link" 
-            onClick={onSwitchToSignUp}
+            onClick={onSwitchToLogin}
             className="text-sm"
           >
-            Don't have an account? Sign up
+            Already have an account? Sign in
           </Button>
         </div>
       </CardFooter>
