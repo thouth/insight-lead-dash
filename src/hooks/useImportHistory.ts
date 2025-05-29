@@ -1,6 +1,7 @@
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/contexts/AuthContext';
 
 export interface ImportHistory {
   id: string;
@@ -15,46 +16,76 @@ export interface ImportHistory {
 }
 
 export const useImportHistory = () => {
+  const { user } = useAuth();
+  
   return useQuery({
     queryKey: ['import-history'],
     queryFn: async () => {
-      // For now, return mock data since we don't have an import_history table yet
-      // This will be replaced when we create the actual table
-      const mockHistory: ImportHistory[] = [
-        {
-          id: '1',
-          fileName: 'leads-q4-2023.xlsx',
-          totalRows: 238,
-          validRows: 235,
-          errorRows: 3,
-          skippedRows: 0,
-          status: 'completed',
-          createdAt: new Date().toISOString(),
-        },
-        {
-          id: '2',
-          fileName: 'conference-leads.xlsx',
-          totalRows: 156,
-          validRows: 148,
-          errorRows: 5,
-          skippedRows: 3,
-          status: 'completed',
-          createdAt: new Date(Date.now() - 86400000).toISOString(),
-        },
-      ];
-      return mockHistory;
+      if (!user) {
+        throw new Error('User not authenticated');
+      }
+
+      const { data, error } = await supabase
+        .from('import_history')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false });
+
+      if (error) {
+        console.error('Error fetching import history:', error);
+        throw error;
+      }
+
+      // Map database fields to interface
+      const mappedData: ImportHistory[] = (data || []).map((item) => ({
+        id: item.id,
+        fileName: item.file_name,
+        totalRows: item.total_rows,
+        validRows: item.valid_rows,
+        errorRows: item.error_rows,
+        skippedRows: item.skipped_rows,
+        status: item.status as 'completed' | 'failed' | 'processing',
+        errorMessage: item.error_message,
+        createdAt: item.created_at,
+      }));
+
+      return mappedData;
     },
+    enabled: !!user,
   });
 };
 
 export const useCreateImportRecord = () => {
   const queryClient = useQueryClient();
+  const { user } = useAuth();
   
   return useMutation({
     mutationFn: async (importData: Omit<ImportHistory, 'id' | 'createdAt'>) => {
-      // For now, just log the import - we'll implement actual storage later
-      console.log('Import record created:', importData);
-      return { id: Date.now().toString(), ...importData, createdAt: new Date().toISOString() };
+      if (!user) {
+        throw new Error('User not authenticated');
+      }
+
+      const { data, error } = await supabase
+        .from('import_history')
+        .insert({
+          user_id: user.id,
+          file_name: importData.fileName,
+          total_rows: importData.totalRows,
+          valid_rows: importData.validRows,
+          error_rows: importData.errorRows,
+          skipped_rows: importData.skippedRows,
+          status: importData.status,
+          error_message: importData.errorMessage,
+        })
+        .select()
+        .single();
+
+      if (error) {
+        console.error('Error creating import record:', error);
+        throw error;
+      }
+
+      return data;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['import-history'] });

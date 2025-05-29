@@ -9,6 +9,48 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      import_history: {
+        Row: {
+          created_at: string | null
+          error_message: string | null
+          error_rows: number
+          file_name: string
+          id: string
+          skipped_rows: number
+          status: string
+          total_rows: number
+          updated_at: string | null
+          user_id: string
+          valid_rows: number
+        }
+        Insert: {
+          created_at?: string | null
+          error_message?: string | null
+          error_rows?: number
+          file_name: string
+          id?: string
+          skipped_rows?: number
+          status: string
+          total_rows?: number
+          updated_at?: string | null
+          user_id: string
+          valid_rows?: number
+        }
+        Update: {
+          created_at?: string | null
+          error_message?: string | null
+          error_rows?: number
+          file_name?: string
+          id?: string
+          skipped_rows?: number
+          status?: string
+          total_rows?: number
+          updated_at?: string | null
+          user_id?: string
+          valid_rows?: number
+        }
+        Relationships: []
+      }
       leads: {
         Row: {
           company: string
