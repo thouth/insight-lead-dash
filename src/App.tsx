@@ -7,6 +7,7 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 
 import Dashboard from "./pages/Dashboard";
+import Pipeline from "./pages/Pipeline";
 import Leads from "./pages/Leads";
 import Import from "./pages/Import";
 import Auth from "./pages/Auth";
@@ -58,6 +59,14 @@ const AppRoutes = () => {
         element={
           <ProtectedRoute>
             <Dashboard />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/pipeline"
+        element={
+          <ProtectedRoute>
+            <Pipeline />
           </ProtectedRoute>
         }
       />

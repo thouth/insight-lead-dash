@@ -6,7 +6,8 @@ import {
   Import, 
   LogOut,
   Users,
-  Menu 
+  Menu,
+  Trello
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
@@ -25,6 +26,7 @@ const Layout = ({ children }: LayoutProps) => {
 
   const menuItems = [
     { name: 'Dashboard', path: '/', icon: <Home className="h-5 w-5" /> },
+    { name: 'Pipeline', path: '/pipeline', icon: <Trello className="h-5 w-5" /> },
     { name: 'Leads', path: '/leads', icon: <Users className="h-5 w-5" /> },
     { name: 'Import Data', path: '/import', icon: <Import className="h-5 w-5" /> },
   ];

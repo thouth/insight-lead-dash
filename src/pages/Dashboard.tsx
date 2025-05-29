@@ -14,11 +14,11 @@ const Dashboard = () => {
         
         <LeadMetrics />
         
+        <LeadCharts />
+        
         <div className="mt-6">
           <RecentLeads />
         </div>
-        
-        <LeadCharts />
       </div>
     </Layout>
   );
