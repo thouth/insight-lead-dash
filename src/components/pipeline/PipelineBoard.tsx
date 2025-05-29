@@ -1,20 +1,27 @@
 
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { ScrollArea } from '@/components/ui/scroll-area';
-import { useLeads } from '@/hooks/useLeads';
+import { useState } from 'react';
+import { DndContext, DragEndEvent, DragOverlay, DragStartEvent } from '@dnd-kit/core';
+import { arrayMove } from '@dnd-kit/sortable';
+import { usePipelineCards, useUpdatePipelineCard, PipelineCard } from '@/hooks/usePipelineCards';
+import { PipelineColumn } from './PipelineColumn';
+import { SortableCard } from './SortableCard';
+import { CardDialog } from './CardDialog';
 
 const pipelineColumns = [
-  { id: 'not_started', title: 'Ikke startet', status: 'new' },
-  { id: 'mapping', title: 'Kartlegging', status: 'qualified' },
-  { id: 'quote_phase', title: 'Tilbudsfase', status: 'proposal' },
-  { id: 'negotiation', title: 'Forhandling', status: 'negotiation' },
-  { id: 'parked', title: 'Parkert', status: 'on_hold' },
-  { id: 'closed', title: 'Avsluttet', status: 'closed' }
+  { id: 'not_started', title: 'Ikke startet' },
+  { id: 'mapping', title: 'Kartlegging' },
+  { id: 'quote_phase', title: 'Tilbudsfase' },
+  { id: 'negotiation', title: 'Forhandling' },
+  { id: 'parked', title: 'Parkert' },
+  { id: 'closed', title: 'Avsluttet' }
 ];
 
 export function PipelineBoard() {
-  const { data: leads, isLoading } = useLeads();
+  const { data: cards = [], isLoading } = usePipelineCards();
+  const updateMutation = useUpdatePipelineCard();
+  const [activeCard, setActiveCard] = useState<PipelineCard | null>(null);
+  const [selectedCard, setSelectedCard] = useState<PipelineCard | null>(null);
+  const [showEditDialog, setShowEditDialog] = useState(false);
 
   if (isLoading) {
     return (
@@ -26,71 +33,71 @@ export function PipelineBoard() {
     );
   }
 
-  const getLeadsForColumn = (status: string) => {
-    return leads?.filter(lead => lead.status === status) || [];
+  const getCardsForColumn = (stage: string) => {
+    return cards.filter(card => card.stage === stage);
+  };
+
+  const handleDragStart = (event: DragStartEvent) => {
+    const card = cards.find(c => c.id === event.active.id);
+    setActiveCard(card || null);
+  };
+
+  const handleDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
+    setActiveCard(null);
+
+    if (!over) return;
+
+    const activeCard = cards.find(c => c.id === active.id);
+    if (!activeCard) return;
+
+    const overId = String(over.id);
+    
+    // Check if dropped on a column
+    const targetColumn = pipelineColumns.find(col => col.id === overId);
+    if (targetColumn && activeCard.stage !== targetColumn.id) {
+      updateMutation.mutate({
+        id: activeCard.id,
+        stage: targetColumn.id as PipelineCard['stage']
+      });
+    }
+  };
+
+  const handleCardClick = (card: PipelineCard) => {
+    setSelectedCard(card);
+    setShowEditDialog(true);
   };
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
-      {pipelineColumns.map((column) => {
-        const columnLeads = getLeadsForColumn(column.status);
-        
-        return (
-          <Card key={column.id} className="h-fit min-h-[400px]">
-            <CardHeader className="pb-3">
-              <CardTitle className="text-sm font-medium text-center">
-                {column.title}
-                <Badge variant="secondary" className="ml-2">
-                  {columnLeads.length}
-                </Badge>
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="p-3">
-              <ScrollArea className="h-[350px]">
-                <div className="space-y-3">
-                  {columnLeads.map((lead) => (
-                    <Card key={lead.id} className="p-3 cursor-pointer hover:shadow-md transition-shadow">
-                      <div className="space-y-2">
-                        <h4 className="font-medium text-sm leading-tight">
-                          {lead.company}
-                        </h4>
-                        {lead.contact && (
-                          <p className="text-xs text-muted-foreground">
-                            {lead.contact}
-                          </p>
-                        )}
-                        <div className="flex justify-between items-center text-xs">
-                          <span className="text-muted-foreground">
-                            {lead.kwp ? `${lead.kwp} kWp` : 'N/A'}
-                          </span>
-                          {lead.ppa_price && (
-                            <span className="font-medium">
-                              {lead.ppa_price} kr/kWh
-                            </span>
-                          )}
-                        </div>
-                        <div className="flex justify-between items-center">
-                          <Badge variant="outline" className="text-xs">
-                            {lead.source}
-                          </Badge>
-                          <span className="text-xs text-muted-foreground">
-                            {new Date(lead.date).toLocaleDateString('nb-NO')}
-                          </span>
-                        </div>
-                      </div>
-                    </Card>
-                  ))}
-                  {columnLeads.length === 0 && (
-                    <div className="text-center text-muted-foreground text-sm py-8">
-                      Ingen leads
-                    </div>
-                  )}
-                </div>
-              </ScrollArea>
-            </CardContent>
-          </Card>
-        );
-      })}
-    </div>
+    <>
+      <DndContext onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
+          {pipelineColumns.map((column) => (
+            <PipelineColumn
+              key={column.id}
+              id={column.id}
+              title={column.title}
+              cards={getCardsForColumn(column.id)}
+              onCardClick={handleCardClick}
+            />
+          ))}
+        </div>
+
+        <DragOverlay>
+          {activeCard && (
+            <SortableCard
+              card={activeCard}
+              onClick={() => {}}
+            />
+          )}
+        </DragOverlay>
+      </DndContext>
+
+      <CardDialog
+        open={showEditDialog}
+        onOpenChange={setShowEditDialog}
+        card={selectedCard || undefined}
+      />
+    </>
   );
 }

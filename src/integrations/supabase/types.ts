@@ -99,6 +99,48 @@ export type Database = {
         }
         Relationships: []
       }
+      pipeline_cards: {
+        Row: {
+          assigned_to: string | null
+          created_at: string | null
+          date_created: string
+          date_updated: string | null
+          id: string
+          name: string
+          notes: string | null
+          priority: string
+          stage: string
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          assigned_to?: string | null
+          created_at?: string | null
+          date_created?: string
+          date_updated?: string | null
+          id?: string
+          name: string
+          notes?: string | null
+          priority?: string
+          stage: string
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          assigned_to?: string | null
+          created_at?: string | null
+          date_created?: string
+          date_updated?: string | null
+          id?: string
+          name?: string
+          notes?: string | null
+          priority?: string
+          stage?: string
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           avatar_url: string | null
