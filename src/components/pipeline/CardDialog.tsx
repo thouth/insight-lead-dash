@@ -4,9 +4,9 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { PipelineCard, CreatePipelineCard, useCreatePipelineCard, useUpdatePipelineCard, useDeletePipelineCard } from '@/hooks/usePipelineCards';
+import { NotesSection } from './NotesSection';
 import { Trash2 } from 'lucide-react';
 
 interface CardDialogProps {
@@ -98,7 +98,7 @@ export function CardDialog({ open, onOpenChange, card, defaultStage }: CardDialo
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[600px]">
+      <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>
             {card ? 'Rediger kort' : 'Nytt kort'}
@@ -173,16 +173,10 @@ export function CardDialog({ open, onOpenChange, card, defaultStage }: CardDialo
             />
           </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="notes">Notater</Label>
-            <Textarea
-              id="notes"
-              value={notes}
-              onChange={(e) => setNotes(e.target.value)}
-              placeholder="Legg til notater..."
-              rows={4}
-            />
-          </div>
+          <NotesSection 
+            notes={notes}
+            onNotesChange={setNotes}
+          />
 
           {card && (
             <div className="text-sm text-muted-foreground">

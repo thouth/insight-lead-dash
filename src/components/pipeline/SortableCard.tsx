@@ -60,21 +60,6 @@ export function SortableCard({ card, onClick }: SortableCardProps) {
             Tildelt: {card.assigned_to}
           </p>
         )}
-        
-        {card.notes && (
-          <p className="text-xs text-muted-foreground line-clamp-2">
-            {card.notes}
-          </p>
-        )}
-        
-        <div className="flex justify-between items-center text-xs text-muted-foreground">
-          <span>
-            {new Date(card.date_created).toLocaleDateString('nb-NO')}
-          </span>
-          <span>
-            Oppdatert: {new Date(card.date_updated).toLocaleDateString('nb-NO')}
-          </span>
-        </div>
       </div>
     </Card>
   );
