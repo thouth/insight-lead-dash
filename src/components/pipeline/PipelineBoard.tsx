@@ -21,7 +21,8 @@ export function PipelineBoard() {
   const updateMutation = useUpdatePipelineCard();
   const [activeCard, setActiveCard] = useState<PipelineCard | null>(null);
   const [selectedCard, setSelectedCard] = useState<PipelineCard | null>(null);
-  const [showEditDialog, setShowEditDialog] = useState(false);
+  const [showDialog, setShowDialog] = useState(false);
+  const [defaultStage, setDefaultStage] = useState<PipelineCard['stage'] | undefined>(undefined);
 
   if (isLoading) {
     return (
@@ -64,8 +65,23 @@ export function PipelineBoard() {
   };
 
   const handleCardClick = (card: PipelineCard) => {
+    console.log('Card clicked:', card);
     setSelectedCard(card);
-    setShowEditDialog(true);
+    setDefaultStage(undefined);
+    setShowDialog(true);
+  };
+
+  const handleAddCard = (stage: PipelineCard['stage']) => {
+    console.log('Add card for stage:', stage);
+    setSelectedCard(null);
+    setDefaultStage(stage);
+    setShowDialog(true);
+  };
+
+  const handleCloseDialog = () => {
+    setShowDialog(false);
+    setSelectedCard(null);
+    setDefaultStage(undefined);
   };
 
   return (
@@ -79,6 +95,7 @@ export function PipelineBoard() {
               title={column.title}
               cards={getCardsForColumn(column.id)}
               onCardClick={handleCardClick}
+              onAddCard={handleAddCard}
             />
           ))}
         </div>
@@ -94,9 +111,10 @@ export function PipelineBoard() {
       </DndContext>
 
       <CardDialog
-        open={showEditDialog}
-        onOpenChange={setShowEditDialog}
+        open={showDialog}
+        onOpenChange={handleCloseDialog}
         card={selectedCard || undefined}
+        defaultStage={defaultStage}
       />
     </>
   );

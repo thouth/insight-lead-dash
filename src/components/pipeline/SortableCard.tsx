@@ -36,6 +36,13 @@ export function SortableCard({ card, onClick }: SortableCardProps) {
     transition,
   };
 
+  const handleClick = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    console.log('SortableCard clicked:', card.name);
+    onClick();
+  };
+
   return (
     <Card
       ref={setNodeRef}
@@ -45,7 +52,7 @@ export function SortableCard({ card, onClick }: SortableCardProps) {
       className={`p-3 cursor-pointer hover:shadow-md transition-shadow ${
         isDragging ? 'opacity-50' : ''
       }`}
-      onClick={onClick}
+      onClick={handleClick}
     >
       <div className="space-y-2">
         <div className="flex justify-between items-start">
