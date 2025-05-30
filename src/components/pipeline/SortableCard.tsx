@@ -16,6 +16,11 @@ const priorityColors = {
   L: 'bg-green-100 text-green-800 border-green-200',
 };
 
+const contractStatusColors = {
+  signert: 'bg-green-500',
+  avslatt: 'bg-red-500',
+};
+
 export function SortableCard({ card, onClick }: SortableCardProps) {
   const {
     attributes,
@@ -47,12 +52,20 @@ export function SortableCard({ card, onClick }: SortableCardProps) {
           <h4 className="font-medium text-sm leading-tight">
             {card.name}
           </h4>
-          <Badge 
-            variant="outline" 
-            className={`text-xs ${priorityColors[card.priority]}`}
-          >
-            {card.priority}
-          </Badge>
+          <div className="flex flex-col gap-1">
+            <Badge 
+              variant="outline" 
+              className={`text-xs ${priorityColors[card.priority]}`}
+            >
+              {card.priority}
+            </Badge>
+            {card.contract_status && (
+              <div 
+                className={`w-full h-3 rounded ${contractStatusColors[card.contract_status]}`}
+                title={card.contract_status === 'signert' ? 'Signert' : 'Avslått'}
+              />
+            )}
+          </div>
         </div>
         
         {card.assigned_to && (

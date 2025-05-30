@@ -12,6 +12,7 @@ export type PipelineCard = {
   priority: 'H' | 'M' | 'L';
   assigned_to: string | null;
   notes: string | null;
+  contract_status: 'signert' | 'avslatt' | null;
   date_created: string;
   date_updated: string;
   created_at: string;
@@ -24,6 +25,7 @@ export type CreatePipelineCard = {
   priority: PipelineCard['priority'];
   assigned_to?: string;
   notes?: string;
+  contract_status?: PipelineCard['contract_status'];
   date_created?: string;
 };
 

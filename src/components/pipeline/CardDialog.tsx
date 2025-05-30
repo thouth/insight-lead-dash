@@ -31,12 +31,19 @@ const priorityOptions = [
   { value: 'L', label: 'Lav (L)' },
 ];
 
+const contractStatusOptions = [
+  { value: '', label: 'Ikke valgt' },
+  { value: 'signert', label: 'Signert' },
+  { value: 'avslatt', label: 'Avslått' },
+];
+
 export function CardDialog({ open, onOpenChange, card, defaultStage }: CardDialogProps) {
   const [name, setName] = useState('');
   const [stage, setStage] = useState<PipelineCard['stage']>(defaultStage || 'not_started');
   const [priority, setPriority] = useState<PipelineCard['priority']>('M');
   const [assignedTo, setAssignedTo] = useState('');
   const [notes, setNotes] = useState('');
+  const [contractStatus, setContractStatus] = useState<PipelineCard['contract_status']>(null);
   const [dateCreated, setDateCreated] = useState('');
 
   const createMutation = useCreatePipelineCard();
@@ -50,6 +57,7 @@ export function CardDialog({ open, onOpenChange, card, defaultStage }: CardDialo
       setPriority(card.priority);
       setAssignedTo(card.assigned_to || '');
       setNotes(card.notes || '');
+      setContractStatus(card.contract_status);
       setDateCreated(card.date_created);
     } else {
       setName('');
@@ -57,6 +65,7 @@ export function CardDialog({ open, onOpenChange, card, defaultStage }: CardDialo
       setPriority('M');
       setAssignedTo('');
       setNotes('');
+      setContractStatus(null);
       setDateCreated(new Date().toISOString().split('T')[0]);
     }
   }, [card, defaultStage, open]);
@@ -70,6 +79,7 @@ export function CardDialog({ open, onOpenChange, card, defaultStage }: CardDialo
       priority,
       assigned_to: assignedTo || undefined,
       notes: notes || undefined,
+      contract_status: contractStatus,
       date_created: dateCreated,
     };
 
@@ -163,14 +173,35 @@ export function CardDialog({ open, onOpenChange, card, defaultStage }: CardDialo
             </div>
           </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="assignedTo">Tildelt</Label>
-            <Input
-              id="assignedTo"
-              value={assignedTo}
-              onChange={(e) => setAssignedTo(e.target.value)}
-              placeholder="Hvem er kortet tildelt?"
-            />
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="assignedTo">Tildelt</Label>
+              <Input
+                id="assignedTo"
+                value={assignedTo}
+                onChange={(e) => setAssignedTo(e.target.value)}
+                placeholder="Hvem er kortet tildelt?"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="contractStatus">Kontraktstatus</Label>
+              <Select 
+                value={contractStatus || ''} 
+                onValueChange={(value) => setContractStatus(value === '' ? null : value as PipelineCard['contract_status'])}
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {contractStatusOptions.map((option) => (
+                    <SelectItem key={option.value} value={option.value}>
+                      {option.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
           </div>
 
           <NotesSection 

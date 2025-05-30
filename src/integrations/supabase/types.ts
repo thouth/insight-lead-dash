@@ -102,6 +102,7 @@ export type Database = {
       pipeline_cards: {
         Row: {
           assigned_to: string | null
+          contract_status: string | null
           created_at: string | null
           date_created: string
           date_updated: string | null
@@ -115,6 +116,7 @@ export type Database = {
         }
         Insert: {
           assigned_to?: string | null
+          contract_status?: string | null
           created_at?: string | null
           date_created?: string
           date_updated?: string | null
@@ -128,6 +130,7 @@ export type Database = {
         }
         Update: {
           assigned_to?: string | null
+          contract_status?: string | null
           created_at?: string | null
           date_created?: string
           date_updated?: string | null
